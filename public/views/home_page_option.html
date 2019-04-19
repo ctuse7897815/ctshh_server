@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>首页配置</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <style>
+  *{
+    margin: 0;
+    padding: 0;
+  }
+  html,body{
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+  #app {
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: scroll;
+  }
+  label{
+    margin-right: 10px;
+  }
+  /* .add-root{
+    position:absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+  } */
+  </style>
+</head>
+<body>
+  <div id="app">
+    <H1>{{title}}</H1>
+    <table style="width: 100%;">
+      <tr>
+        <td style="width: 20%;">名字</td>
+        <td style="width: 30%;">内容</td>
+        <td style="width: 30%;">图片</td>
+        <td style="width: 10%;">类型</td>
+        <td style="width: 10%;">操作</td>
+      </tr>
+      <tr v-for="(item,index) in mList" :key="index">
+        <td style="width: 20%;">{{ item.title }}</td>
+        <td style="width: 30%;">{{ item.content }}</td>
+        <td style="width: 30%;"><img style="width: 50px;height: 50px;" :src="item.url_thum" v-if="item.type === 'img'"/></td>
+        <td style="width: 10%;" v-if="item.type === 'text'">
+          文本类型
+        </td>
+        <td style="width: 10%;" v-else-if="item.type === 'img'">
+          文本类型
+        </td>
+        <td style="width: 10%;" v-else>
+          二级文本
+        </td>
+        <td style="width: 10%;"><a @click="toDelete(item.id)">删除</a></td>
+      </tr>
+    </table>
+    <div class="add-root">
+      <H1>{{title}}</H1>
+      <input type="hidden" v-model="mId" />
+      <div>
+        <input type="text" v-model="mName" />
+        {{mName}}
+      </div>
+      <div>
+        <input type="text" v-model="mContent"/>
+        {{mContent}}
+      </div>
+      <div>
+        <input type="radio" name="picked" id="text1" v-model="mType" value="text"></input>
+        <label for="text1">text</label>
+        <input type="radio" name="picked" id="img1" v-model="mType" value="img"></input>
+        <label for="img1">img</label>
+        <input type="radio" name="picked" id="second1" v-model="mType" value="second"></input>
+        <label for="second1">second</label>
+        
+        {{mType}}
+      </div>
+      <div v-if="mType === 'img'">
+        <input type="file" class="upload" @change="addImg" ref="inputer1" multiple accept="image/png,image/jpeg,image/gif,image/jpg"/>
+      </div>
+      <img :src="mImgThumUrl"/>
+      <br/>
+      <div style="border: 1px solid #e0e0e0;" v-if="mType==='second'">
+        <input type="file" class="upload" @change="addImg" ref="inputer2" multiple accept="image/png,image/jpeg,image/gif,image/jpg"/>
+        <img :src="mImgThumUrl1"/>
+        <input type="file" class="upload" @change="addImg" ref="inputer3" multiple accept="image/png,image/jpeg,image/gif,image/jpg"/>
+        <img :src="mImgThumUrl2"/>
+      </div>
+      <button v-on:click="saveData">保存</button>
+    </div>
+    <!-- <router-view></router-view> -->
+  </div>
+  
+  <!-- <script type="x-template" id="addPage">
+    <div>
+    </div>
+  </script> -->
+
+</body>
+<script>
+window.onload = function () {
+Vue.prototype.$http = axios;
+var app = new Vue(
+  {
+    el: '#app',
+    data: {
+      title: '配置',
+      mList: [],
+      mId: '',
+      mName: '',
+      mContent: '',
+      mType: '',
+      mImgUrl: '',
+      mImgThumUrl: '',
+      mImgUrl1: '',
+      mImgThumUrl1: '',
+      mImgUrl2: '',
+      mImgThumUrl2: '',
+      title: '添加',
+    },
+    created() {
+      this.loadData()
+    },
+    methods: {
+      toDelete(mId) {
+        console.log('toDelete')
+        const _that = this    
+        _that.$http.post('/main/delete', {id: mId})
+        .then(res => {
+          const resData = res.data
+          if(resData.code ){
+            _that.loadData()
+            alert(resData.msg ? resData.msg : '成功')
+          } else {
+            alert(resData.msg ? resData.msg : '错误')
+          }
+        })
+      },
+      addImg() {
+        let _this = this;
+        var file = event.target.files[0];
+        let formData = new FormData();
+        formData.append('content', file);
+        let config = {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+        this.$http.post('/fileUpload', formData, config).then(function (res) {
+          if (res.data && res.data.code && res.data.data.url && res.data.data.thum_url) {
+            _this.mImgUrl = res.data.data.url;
+            _this.mImgThumUrl = res.data.data.thum_url;
+          } else {
+            alert('失败')
+          }
+        })
+      },
+      saveData() {
+        var mParams = {}, _that = this
+        mParams['title'] = _that.mName
+        mParams['content'] = _that.mContent
+        mParams['type'] = _that.mType
+        mParams['url'] = _that.mImgUrl
+        mParams['url_thum'] = _that.mImgThumUrl
+        _that.$http.post('/main/save', mParams)
+        .then(res => {
+          const resData = res.data
+          if(resData.code ){
+            _that.loadData()
+            alert(resData.msg ? resData.msg : '成功')
+          } else {
+            alert(resData.msg ? resData.msg : '错误')
+          }
+        })
+      },
+      loadData () {
+        const _that = this
+        _that.$http.post('/main/query')
+        .then(res => {
+          const resData = res.data
+          if(resData && resData.code === 1 && resData.data && resData.data.list && resData.data.list.length > 0){
+            _that.mList = resData.data.list
+          }
+        })
+      }
+    }
+  }
+);
+}
+</script>
+</html>
